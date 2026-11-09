@@ -232,7 +232,7 @@ def experiment_series(configs: List[GAConfig], features, budget, deadline):
 
 # НОВАЯ ФУНКЦИЯ ДЛЯ СОХРАНЕНИЯ В CSV
 def save_results_csv(results: dict, path: str):
-    with open(path, "w", newline="") as f:
+    with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["config", "run", "best_f", "mean_f", "std_f", "median_f", "worst_f"])
         for tag, data in results.items():
@@ -242,6 +242,180 @@ def save_results_csv(results: dict, path: str):
                         float(np.median(b)), float(b.max())])
             for i, v in enumerate(b):
                 w.writerow([tag, i, float(v), "", "", "", ""])
+
+def save_histories(results: dict, path: str):
+    payload = {}
+    for tag, data in results.items():
+        payload[f"{tag}__hist"] = data["histories"]
+    np.savez_compressed(path, **payload)
+
+
+def save_best_solution_json(best_x, features, budget, deadline, path: str):
+    import json
+    selected = [features[i] for i in range(N_FEATURES) if best_x[i] == 1]
+    payload = {
+        "selected_count": len(selected),
+        "budget": budget,
+        "deadline": deadline,
+        "total_cost": int(sum(f.cost for f in selected)),
+        "total_time": int(sum(f.time for f in selected)),
+        "total_value": int(sum(f.value for f in selected)),
+        "features": [
+            {"id": int(f.id), "value": int(f.value), "cost": int(f.cost),
+             "time": int(f.time), "depends_on": [int(d) for d in f.depends_on]}
+            for f in selected
+        ],
+    }
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
+
+
+def plot_flowchart(path: str):
+    """Блок-схема бинарного генетического алгоритма с обработкой ограничений."""
+    from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+
+    fig, ax = plt.subplots(figsize=(12.5, 11.2))
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 11.8)
+    ax.axis("off")
+
+    def box(x, y, w, h, text, color="#EAF2FB", edge="#2F5D8A", fs=10):
+        p = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08,rounding_size=0.15",
+                           linewidth=1.6, edgecolor=edge, facecolor=color)
+        ax.add_patch(p)
+        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
+                fontsize=fs, color="#12263A")
+
+    def arrow(x1, y1, x2, y2, text="", color="#2F5D8A", fs=8.5, ha="left"):
+        a = FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=15,
+                            linewidth=1.6, color=color,
+                            connectionstyle="arc3,rad=0.0")
+        ax.add_patch(a)
+        if text:
+            ax.text((x1 + x2) / 2 + 0.15, (y1 + y2) / 2, text, fontsize=fs,
+                    color=color, ha=ha, va="center")
+
+    ax.text(7, 11.4, "Блок-схема ЛР №2: ГА для выбора функций ПО (бинарное кодирование)",
+            ha="center", va="center", fontsize=14.5, fontweight="bold", color="#12263A")
+
+    cx, w = 4.0, 5.7
+    steps = [
+        ("Старт\n(seed = 42…61)", 10.5, "#EAF2FB", "#2F5D8A"),
+        ("Инициализация бинарной популяции\n(40 генов, 100 особей)", 9.6, "#EAF2FB", "#2F5D8A"),
+        ("Оценка фитнеса:\nсуммарная ценность − штрафы", 8.7, "#EAF2FB", "#2F5D8A"),
+        ("Обработка ограничений:\nремонт или штрафы", 7.5, "#FEF9E7", "#B7950B"),
+        ("Элитизм: 2 лучшие особи", 6.6, "#EAF2FB", "#2F5D8A"),
+        ("Турнирная селекция родителей (k = 3)", 5.7, "#EAF2FB", "#2F5D8A"),
+        ("Одноточечный кроссовер (p = 0.9)", 4.8, "#EAF2FB", "#2F5D8A"),
+        ("Битовая мутация (p = 0.05)", 3.9, "#EAF2FB", "#2F5D8A"),
+        ("Ремонт / штраф → допустимость\n(бюджет, срок, зависимости)", 2.9, "#FEF9E7", "#B7950B"),
+        ("Новая популяция и оценка фитнеса", 2.0, "#EAF2FB", "#2F5D8A"),
+        ("Достигнуто 200 поколений?", 1.1, "#EAF2FB", "#2F5D8A"),
+        ("Лучший набор функций\nи отчёт", 0.1, "#E8F8F5", "#117A65"),
+    ]
+    for text, y, color, edge in steps:
+        box(cx, y, w, 0.72, text, color=color, edge=edge)
+
+    for i in range(len(steps) - 2):
+        y_from = steps[i][1]
+        y_to = steps[i + 1][1] + 0.72
+        arrow(cx + w / 2, y_from, cx + w / 2, y_to)
+
+    arrow(cx + w / 2, 1.1, cx + w / 2, 0.82, text="да", ha="left")
+
+    loop_x = 12.0
+    arrow(cx + w, 1.46, loop_x, 1.46, color="#B03A2E")
+    arrow(loop_x, 1.46, loop_x, 6.96, color="#B03A2E")
+    arrow(loop_x, 6.96, cx + w, 6.96, color="#B03A2E")
+    ax.text(loop_x + 0.15, 4.3, "нет:\nследующее\nпоколение", fontsize=9,
+            color="#B03A2E", ha="left", va="center")
+
+    plt.tight_layout()
+    plt.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close()
+
+
+def plot_dashboard(results: dict, budget: int, deadline: int, features: List[Feature], path: str):
+    """Дашборд ЛР №2: сходимость, разброс, средние и состав лучшего решения."""
+    from matplotlib.gridspec import GridSpec
+
+    tags = list(results.keys())
+    colors = ["#C44E52", "#55A868"]
+    fig = plt.figure(figsize=(17, 10.5))
+    gs = GridSpec(2, 3, figure=fig, hspace=0.40, wspace=0.30,
+                  height_ratios=[1.05, 1.0])
+    fig.suptitle("ЛР №2 · ГА для дискретной задачи с ограничениями · 20 независимых запусков",
+                 fontsize=16, fontweight="bold", color="#12263A", y=0.98)
+
+    ax1 = fig.add_subplot(gs[0, :2])
+    for tag, color in zip(tags, colors):
+        hb = results[tag]["histories"]
+        mean_curve = -hb.mean(axis=0)
+        std_curve = hb.std(axis=0)
+        gens = np.arange(len(mean_curve))
+        ax1.plot(gens, mean_curve, color=color, label=tag, linewidth=2)
+        ax1.fill_between(gens, mean_curve - std_curve, mean_curve + std_curve,
+                         color=color, alpha=0.13)
+    ax1.set_xlabel("Поколение")
+    ax1.set_ylabel("Ценность решения (−fitness)")
+    ax1.set_title("Сходимость: среднее ± std по 20 запускам (выше — лучше)")
+    ax1.grid(alpha=0.3)
+    ax1.legend(fontsize=9)
+
+    ax2 = fig.add_subplot(gs[0, 2])
+    data = [-results[t]["bests_f"] for t in tags]
+    bp = ax2.boxplot(data, patch_artist=True, widths=0.55)
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.72)
+    ax2.set_xticklabels(tags, rotation=20, ha="right", fontsize=8.5)
+    ax2.set_ylabel("Значение целевой функции")
+    ax2.set_title("Разброс по запускам")
+    ax2.grid(alpha=0.3, axis="y")
+
+    ax3 = fig.add_subplot(gs[1, :2])
+    means = [-results[t]["bests_f"].mean() for t in tags]
+    stds = [results[t]["bests_f"].std() for t in tags]
+    xpos = np.arange(len(means))
+    bars = ax3.bar(xpos, means, yerr=stds, capsize=6, color=colors, alpha=0.82,
+                   edgecolor="white", width=0.45)
+    for bar, m in zip(bars, means):
+        ax3.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 8,
+                 f"{m:.1f}", ha="center", va="bottom", fontsize=10, color="#12263A")
+    ax3.set_xticks(xpos)
+    ax3.set_xticklabels(tags)
+    ax3.set_ylabel("Средняя ценность (−fitness)")
+    ax3.set_title("Средний результат методов обработки ограничений")
+    ax3.set_ylim(min(means) * 0.9, max(means) * 1.05)
+    ax3.grid(alpha=0.3, axis="y")
+
+    ax4 = fig.add_subplot(gs[1, 2])
+    ax4.axis("off")
+    best_repair_idx = int(np.argmin(results["Repair (Ремонт)"]["bests_f"]))
+    best_x = results["Repair (Ремонт)"]["bests_x"][best_repair_idx]
+    selected = [i for i in range(N_FEATURES) if best_x[i] == 1]
+    total_cost = sum(features[i].cost for i in selected)
+    total_time = sum(features[i].time for i in selected)
+    total_value = sum(features[i].value for i in selected)
+    lines = [
+        "Лучшее решение (Repair)",
+        "",
+        f"Функций: {len(selected)} из {N_FEATURES}",
+        f"Ценность: {total_value}",
+        f"Стоимость: {total_cost} / {budget}",
+        f"Время: {total_time} / {deadline}",
+        "",
+        "Выбранные функции:",
+        ", ".join(str(i) for i in selected),
+    ]
+    ax4.text(0.02, 0.98, "\n".join(lines), ha="left", va="top", fontsize=10,
+             family="DejaVu Sans", color="#12263A",
+             bbox=dict(boxstyle="round,pad=0.6", facecolor="#E8F8F5", edgecolor="#117A65"))
+    ax4.set_title("Интерпретация результата", pad=12)
+
+    plt.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close()
+
 
 def print_best_solution(best_x: np.ndarray, features: List[Feature], budget: int, deadline: int):
     print("\n=== Лучшее найденное решение (Понятное пользователю) ===")
@@ -293,6 +467,8 @@ def main():
     
     # Сохраняем CSV
     save_results_csv(results, "lab2_out/lab2_results.csv")
+    save_histories(results, "lab2_out/lab2_histories.npz")
+    plot_flowchart("lab2_out/lab2_block_schema.png")
     
     print("\n=== Сводка по 20 запускам (Фитнес) ===")
     for tag, data in results.items():
@@ -302,9 +478,12 @@ def main():
     best_repair_idx = np.argmin(results["Repair (Ремонт)"]["bests_f"])
     best_repair_x = results["Repair (Ремонт)"]["bests_x"][best_repair_idx]
     print_best_solution(best_repair_x, features, budget, deadline)
+    save_best_solution_json(best_repair_x, features, budget, deadline,
+                            "lab2_out/lab2_best_solution.json")
     
     plot_convergence(results, "lab2_out/lab2_convergence.png")
-    print("\nФайлы сохранены в папку lab2_out/ (lab2_results.csv, lab2_convergence.png)")
+    plot_dashboard(results, budget, deadline, features, "lab2_out/lab2_dashboard.png")
+    print("\nФайлы сохранены в папку lab2_out/ (CSV, JSON, PNG, NPZ)")
 
 if __name__ == "__main__":
     main()

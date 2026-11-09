@@ -1,0 +1,142 @@
+{
+  "selected_count": 18,
+  "budget": 513,
+  "deadline": 80,
+  "total_cost": 511,
+  "total_time": 75,
+  "total_value": 1327,
+  "features": [
+    {
+      "id": 0,
+      "value": 68,
+      "cost": 13,
+      "time": 7,
+      "depends_on": []
+    },
+    {
+      "id": 1,
+      "value": 87,
+      "cost": 27,
+      "time": 4,
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "value": 57,
+      "cost": 18,
+      "time": 1,
+      "depends_on": []
+    },
+    {
+      "id": 3,
+      "value": 80,
+      "cost": 49,
+      "time": 7,
+      "depends_on": [
+        2
+      ]
+    },
+    {
+      "id": 7,
+      "value": 87,
+      "cost": 45,
+      "time": 1,
+      "depends_on": []
+    },
+    {
+      "id": 8,
+      "value": 78,
+      "cost": 43,
+      "time": 2,
+      "depends_on": []
+    },
+    {
+      "id": 9,
+      "value": 50,
+      "cost": 12,
+      "time": 9,
+      "depends_on": []
+    },
+    {
+      "id": 11,
+      "value": 59,
+      "cost": 29,
+      "time": 1,
+      "depends_on": []
+    },
+    {
+      "id": 12,
+      "value": 77,
+      "cost": 16,
+      "time": 9,
+      "depends_on": []
+    },
+    {
+      "id": 13,
+      "value": 91,
+      "cost": 26,
+      "time": 3,
+      "depends_on": []
+    },
+    {
+      "id": 19,
+      "value": 67,
+      "cost": 19,
+      "time": 7,
+      "depends_on": [
+        2
+      ]
+    },
+    {
+      "id": 20,
+      "value": 81,
+      "cost": 42,
+      "time": 1,
+      "depends_on": []
+    },
+    {
+      "id": 21,
+      "value": 73,
+      "cost": 41,
+      "time": 5,
+      "depends_on": []
+    },
+    {
+      "id": 23,
+      "value": 49,
+      "cost": 19,
+      "time": 2,
+      "depends_on": []
+    },
+    {
+      "id": 29,
+      "value": 92,
+      "cost": 44,
+      "time": 3,
+      "depends_on": []
+    },
+    {
+      "id": 30,
+      "value": 60,
+      "cost": 21,
+      "time": 2,
+      "depends_on": []
+    },
+    {
+      "id": 33,
+      "value": 75,
+      "cost": 13,
+      "time": 7,
+      "depends_on": []
+    },
+    {
+      "id": 37,
+      "value": 96,
+      "cost": 34,
+      "time": 4,
+      "depends_on": [
+        3
+      ]
+    }
+  ]
+}
