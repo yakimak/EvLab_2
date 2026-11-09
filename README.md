@@ -84,9 +84,7 @@ $\max\sum_i v_i x_i$ при ограничениях на бюджет, срок
 
 ## Графики
 
-| Сходимость | Сравнение |
-|---|---|
-| ![Сходимость](lab2_out/lab2_convergence.png) | ![Сравнение](lab2_out/lab2_comparison.png) |
+![Сходимость](lab2_out/lab2_convergence.png)
 
 ## Быстрый запуск
 
